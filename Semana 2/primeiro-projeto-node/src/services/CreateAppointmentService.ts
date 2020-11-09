@@ -1,34 +1,33 @@
 import { startOfHour } from 'date-fns'
+import { getCustomRepository } from 'typeorm'
 
-import Appointement from '../models/Appointement'
+import Appointment from '../models/Appointement'
 import AppointementsRepository from '../repositores/AppointementsRepository'
 
 interface Request{
     date: Date,
-    provider: string,
+    provider_id: string,
 }
 
 class createAppointmentService {
 
-    private appointementsRepository: AppointementsRepository
+    public async execute({ date, provider_id} : Request): Promise<Appointment> {
+        const appointementsRepository = getCustomRepository(AppointementsRepository)
 
-    constructor(appointementsRepository: AppointementsRepository){
-        this.appointementsRepository = appointementsRepository
-    }
-
-    public execute({ date, provider} : Request): Appointement {
         const appointementDate = startOfHour(date)
-        const findAppointmentInSameDate = this.appointementsRepository.findByDate(appointementDate)
+        const findAppointmentInSameDate = await appointementsRepository.findByDate(appointementDate)
 
         if (findAppointmentInSameDate) {
             throw Error('This appointement is already in use.')
         }
 
-        const appointement = this.appointementsRepository.create({
-            provider,
+        const appointement = appointementsRepository.create({
+            provider_id,
             date: appointementDate,
 
         })
+
+        await appointementsRepository.save(appointement)
 
         return appointement
     }
